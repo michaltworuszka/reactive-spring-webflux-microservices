@@ -11,6 +11,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class ReviewHandler {
@@ -25,13 +27,25 @@ public class ReviewHandler {
                         .bodyValue(savedRaview));
     }
 
-    public Mono<ServerResponse> getReviews(ServerRequest request) {
+    public Mono<ServerResponse> getReviews(@NotNull ServerRequest request) {
 
-        Flux<Review> reviews = reviewReactiveRepository.findAll();
-        return ServerResponse.ok().body(reviews, Review.class);
+        Optional<String> movieInfoId = request.queryParam("movieInfoId");
+
+        if (movieInfoId.isPresent()) {
+            Flux<Review> reviewsByMovieInfoId = reviewReactiveRepository.findReviewsByMovieInfoId(Long.valueOf(movieInfoId.get())).log();
+            return buildReviewsResponse(reviewsByMovieInfoId);
+
+        } else {
+            Flux<Review> reviews = reviewReactiveRepository.findAll().log();
+            return buildReviewsResponse(reviews);
+        }
     }
 
-    public Mono<ServerResponse> updateReview(ServerRequest request) {
+    private @NotNull Mono<ServerResponse> buildReviewsResponse(Flux<Review> reviewsByMovieInfoId) {
+        return ServerResponse.ok().body(reviewsByMovieInfoId, Review.class);
+    }
+
+    public Mono<ServerResponse> updateReview(@NotNull ServerRequest request) {
 
         String reviewId = request.pathVariable("id");
 
@@ -48,7 +62,7 @@ public class ReviewHandler {
                 );
     }
 
-    public Mono<ServerResponse> deleteReview(ServerRequest request) {
+    public Mono<ServerResponse> deleteReview(@NotNull ServerRequest request) {
         String reviewId = request.pathVariable("id");
 
         Mono<Review> existingReview = reviewReactiveRepository.findById(reviewId);

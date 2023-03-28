@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
@@ -17,11 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test") //this profile need to be different from other profiles used in Application
+@ActiveProfiles("testing") //this profile need to be different from other profiles used in Application
 @AutoConfigureWebTestClient
 public class ReviewsIntgTest {
 
-    private static final String MOVIES_INFO_URL = "/v1/reviews";
+    private static final String REVIEWS_URL = "/v1/reviews";
 
     @Autowired
     WebTestClient webTestClient;
@@ -48,13 +49,12 @@ public class ReviewsIntgTest {
 
     @Test
     void addReview(){
-        //given
+
         var review = new Review(null, 1L, "Awesome Movie", 9.0);
 
-        //when
         webTestClient
                 .post()
-                .uri(MOVIES_INFO_URL)
+                .uri(REVIEWS_URL)
                 .bodyValue(review)
                 .exchange()
                 .expectStatus()
@@ -68,23 +68,20 @@ public class ReviewsIntgTest {
 
                 });
 
-        //then
     }
 
     @Test
     void updateReview(){
-        //given
+
         var id = "/1";
         var review = new Review(null, 1L, "Awesome Movie2", 4.0);
 
-        //when
         webTestClient
                 .put()
-                .uri(MOVIES_INFO_URL + id)
+                .uri(REVIEWS_URL + id)
                 .bodyValue(review)
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody(Review.class)
                 .consumeWith(movieInfoEntityExchangeResult -> {
 
@@ -94,7 +91,75 @@ public class ReviewsIntgTest {
                     assertEquals(review.getRating(), updatedReview.getRating());
 
                 });
+    }
 
-        //then
+    @Test
+    void getAllReviews(){
+
+        webTestClient
+                .get()
+                .uri(REVIEWS_URL)
+                .exchange()
+                .expectStatus()
+                .is2xxSuccessful()
+                .expectBodyList(Review.class)
+                .hasSize(3);
+    }
+
+    @Test
+    void deleteReview(){
+
+        var id = "/1";
+
+        webTestClient
+                .delete()
+                .uri(REVIEWS_URL + id)
+                .exchange()
+                .expectStatus().isNoContent();
+    }
+
+    @Test
+    void getAllReviewsByMovieInfoId(){
+        var param = "?movieInfoId=1";
+
+        webTestClient
+                .get()
+                .uri(REVIEWS_URL + param)
+                .exchange()
+                .expectStatus()
+                .is2xxSuccessful()
+                .expectBodyList(Review.class)
+                .hasSize(2);
+    }
+
+    @Test
+    void getAllReviewsByMovieInfoIdV2(){
+
+        webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder.path(REVIEWS_URL)
+                        .queryParam("movieInfoId", "1")
+                        .build())
+                .exchange()
+                .expectStatus()
+                .is2xxSuccessful()
+                .expectBodyList(Review.class)
+                .hasSize(2);
+    }
+
+    @Test
+    void getAllReviewsByMovieInfoIdV3(){
+        var uri = UriComponentsBuilder.fromUriString(REVIEWS_URL)
+                        .queryParam("movieInfoId", 1)
+                                .buildAndExpand().toUri();
+
+        webTestClient
+                .get()
+                .uri(uri)
+                .exchange()
+                .expectStatus()
+                .is2xxSuccessful()
+                .expectBodyList(Review.class)
+                .hasSize(2);
     }
 }
