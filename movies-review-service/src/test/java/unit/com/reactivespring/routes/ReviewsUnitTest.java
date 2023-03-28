@@ -1,6 +1,7 @@
 package com.reactivespring.routes;
 
 import com.reactivespring.domain.Review;
+import com.reactivespring.exeptionhandler.GlobalErrorHandler;
 import com.reactivespring.handler.ReviewHandler;
 import com.reactivespring.repo.ReviewReactiveRepository;
 import com.reactivespring.router.ReviewRouter;
@@ -11,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,7 +25,8 @@ import static org.mockito.Mockito.when;
 @WebFluxTest
 @ContextConfiguration(classes = {
         ReviewRouter.class,
-        ReviewHandler.class
+        ReviewHandler.class,
+        GlobalErrorHandler.class
 })
 @AutoConfigureWebTestClient
 public class ReviewsUnitTest {
@@ -65,8 +66,9 @@ public class ReviewsUnitTest {
 
                 });
     }
+
     @Test
-    void updateReview(){
+    void updateReview() {
         //given
         var id = "a1";
         var existingReview = new Review(id, 1L, "Awesome Movie2", 9.0);
@@ -98,7 +100,7 @@ public class ReviewsUnitTest {
     }
 
     @Test
-    void getAllReviews(){
+    void getAllReviews() {
         //given
         var reviewsList = List.of(
                 new Review("1", 1L, "Awesome Movie", 9.0),
@@ -121,7 +123,7 @@ public class ReviewsUnitTest {
     }
 
     @Test
-    void deleteReview(){
+    void deleteReview() {
         //given
         var id = "/1";
         var existingReview = new Review(id, 1L, "Awesome Movie2", 9.0);
@@ -140,21 +142,7 @@ public class ReviewsUnitTest {
     }
 
     @Test
-    void getAllReviewsByMovieInfoId(){
-        var param = "?movieInfoId=1";
-
-        webTestClient
-                .get()
-                .uri(REVIEWS_URL + param)
-                .exchange()
-                .expectStatus()
-                .is2xxSuccessful()
-                .expectBodyList(Review.class)
-                .hasSize(2);
-    }
-
-    @Test
-    void getAllReviewsByMovieInfoIdV2(){
+    void getAllReviewsByMovieInfoId() {
         //given
         var existingReview = new Review("a1", 1L, "Awesome Movie2", 9.0);
 
@@ -176,18 +164,22 @@ public class ReviewsUnitTest {
     }
 
     @Test
-    void getAllReviewsByMovieInfoIdV3(){
-        var uri = UriComponentsBuilder.fromUriString(REVIEWS_URL)
-                .queryParam("movieInfoId", 1)
-                .buildAndExpand().toUri();
+    void addReview_validation() {
+        //given
+        var review = new Review(null, null, "Awesome Movie2", -4.0);
 
+        //when
+        when(reviewReactiveRepository.save(isA(Review.class)))
+                .thenReturn(Mono.just(new Review("a1", 1L, "Awesome Movie2", 4.0)));
+
+        //then
         webTestClient
-                .get()
-                .uri(uri)
+                .post()
+                .uri(REVIEWS_URL)
+                .bodyValue(review)
                 .exchange()
-                .expectStatus()
-                .is2xxSuccessful()
-                .expectBodyList(Review.class)
-                .hasSize(2);
+                .expectStatus().isBadRequest()
+                .expectBody(String.class)
+                .isEqualTo("rating.negative : rating is negative and please pass a non-negative value, review.movieInfoId: must not be null");
     }
 }
