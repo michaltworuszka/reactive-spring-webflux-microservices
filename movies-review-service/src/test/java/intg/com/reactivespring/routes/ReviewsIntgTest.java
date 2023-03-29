@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("testing") //this profile need to be different from other profiles used in Application
+@ActiveProfiles("test") //this profile need to be different from other profiles used in Application
 @AutoConfigureWebTestClient
 public class ReviewsIntgTest {
 
