@@ -36,7 +36,8 @@ public class MoviesInfoController {
     public Mono<ResponseEntity<MovieInfo>> getMovieInfoById(@PathVariable("id") String id) {
 
         return moviesInfoService.getMovieInfoById(id)
-                .map(movieInfo -> ResponseEntity.ok().body(movieInfo))
+                .map(movieInfo -> ResponseEntity.ok()
+                        .body(movieInfo))
                 .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
                 .log();
     }

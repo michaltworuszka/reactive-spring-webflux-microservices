@@ -17,7 +17,7 @@ public class ReviewsRestClient {
     @Value("${restClient.reviewsUrl}")
     private String reviewsUrl;
 
-    public Flux<Review> retrieveReviews (String movieId){
+    public Flux<Review> retrieveReviews(String movieId) {
 
         //movieInfoId
         String uri = UriComponentsBuilder.fromUriString(reviewsUrl)
