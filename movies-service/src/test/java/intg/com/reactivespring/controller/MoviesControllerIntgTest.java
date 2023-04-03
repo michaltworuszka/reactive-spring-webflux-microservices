@@ -116,4 +116,25 @@ public class MoviesControllerIntgTest {
                 });
 
     }
+
+    @Test
+    void retrieveMovieById_5XX() {
+        //given
+        var movieId = "abc";
+
+        stubFor(get(urlEqualTo("/v1/movieinfos/" + movieId))  //mocking retrieve call from services - using wiremock server
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withBody("MovieInfo Service Unavailable")));
+
+        //when + then
+        webTestClient
+                .get()
+                .uri("/v1/movies/{id}", movieId)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody(String.class)
+                .isEqualTo("Server Exception in MoviesInfoService MovieInfo Service Unavailable");
+
+    }
 }
