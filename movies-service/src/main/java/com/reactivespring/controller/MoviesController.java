@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
+
 @RestController
 @RequestMapping("/v1/movies")
 @RequiredArgsConstructor
@@ -27,8 +28,7 @@ public class MoviesController {
 
         return moviesInfoRestClient.retrieveMovieInfo(movieId)
                 .flatMap(movieInfo -> {
-                            Mono<List<Review>> reviewsListMono = reviewsRestClient
-                                    .retrieveReviews(movieId)
+                            Mono<List<Review>> reviewsListMono = reviewsRestClient.retrieveReviews(movieId)
                                     .collectList();
                             return reviewsListMono.map(reviews -> new Movie(movieInfo, reviews));
                         }
