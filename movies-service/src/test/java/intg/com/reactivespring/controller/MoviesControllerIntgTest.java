@@ -1,5 +1,6 @@
 package com.reactivespring.controller;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.reactivespring.domain.Movie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,8 @@ public class MoviesControllerIntgTest {
                 .expectBody(String.class)
                 .isEqualTo("There is no MovieInfo available for the passed id : " + movieId);
 
+        WireMock.verify(1, getRequestedFor(urlEqualTo("/v1/movieinfos/" + movieId)));
+
     }
 
     @Test
@@ -136,5 +139,56 @@ public class MoviesControllerIntgTest {
                 .expectBody(String.class)
                 .isEqualTo("Server Exception in MoviesInfoService MovieInfo Service Unavailable");
 
+    }
+
+    @Test
+    void retrieveMovieById_5XX_retry() {
+        //given
+        var movieId = "abc";
+
+        stubFor(get(urlEqualTo("/v1/movieinfos/" + movieId))  //mocking retrieve call from services - using wiremock server
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withBody("MovieInfo Service Unavailable")));
+
+        //when + then
+        webTestClient
+                .get()
+                .uri("/v1/movies/{id}", movieId)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody(String.class)
+                .isEqualTo("Server Exception in MoviesInfoService MovieInfo Service Unavailable");
+
+        WireMock.verify(4, getRequestedFor(urlEqualTo("/v1/movieinfos/" + movieId)));
+
+    }
+
+    @Test
+    void retrieveMovieById_Reviews_5XX_retry() {
+        //given
+        var movieId = "abc";
+
+        stubFor(get(urlEqualTo("/v1/movieinfos/" + movieId))  //mocking retrieve call from services - using wiremock server
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBodyFile("movieinfo.json")));
+
+        stubFor(get(urlPathEqualTo("/v1/reviews"))
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withBody("Reviews Service Not Available")));
+
+
+        //when + then
+        webTestClient
+                .get()
+                .uri("/v1/movies/{id}", movieId)
+                .exchange()
+                .expectStatus().is5xxServerError()
+                .expectBody(String.class)
+                .isEqualTo("Server Exception in ReviewsService Reviews Service Not Available");
+
+        WireMock.verify(4, getRequestedFor(urlPathMatching("/v1/reviews*")));
     }
 }

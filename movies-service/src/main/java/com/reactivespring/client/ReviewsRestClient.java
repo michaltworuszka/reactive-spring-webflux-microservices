@@ -3,6 +3,7 @@ package com.reactivespring.client;
 import com.reactivespring.domain.Review;
 import com.reactivespring.exception.ReviewsClientException;
 import com.reactivespring.exception.ReviewsServerException;
+import com.reactivespring.util.RetryUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +53,7 @@ public class ReviewsRestClient {
                             .flatMap(responseMessage -> Mono.error(new ReviewsServerException("Server Exception in ReviewsService " + responseMessage)));
                 })
                 .bodyToFlux(Review.class)
+                .retryWhen(RetryUtil.retrySpec())
                 .log();
     }
 }
